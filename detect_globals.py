@@ -1,4 +1,4 @@
-#!/home/taste/GitLocal/DeadCodeDetector/.venv/bin/python3
+#!/usr/bin/env python3
 """
 A utility that parses pre-processed (standalone) C files using Clang,
 and then detects and reports all functions inside an ELF that are
@@ -88,16 +88,16 @@ def parse_ast(t_units: List[Any]) -> None:
                         if token.spelling == 'static':
                             is_static = True
                             continue
+                        if token.spelling == 'in':
+                            import pdb ; pdb.set_trace()
                         if token.location.column < last_column:
                             if interim:
-                                # import pdb ; pdb.set_trace()
                                 emit_interim(is_static)
                                 is_static = False
                         interim.append(token.spelling)
                         last_column = token.location.column
                 else:
                     if interim:
-                        # import pdb ; pdb.set_trace()
                         emit_interim(is_static)
                         is_static = False
         # res_queue.put(result)
