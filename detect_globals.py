@@ -28,7 +28,7 @@ G_DEBUG = 1
 
 def parse_ast(t_units: List[Any]) -> None:
     """
-    Traverse the AST, gathering all mentions of our functions.
+    Traverse the AST, gathering all globals/statics
     """
 
     def process_unit(t_unit: Any):
@@ -58,14 +58,10 @@ def parse_ast(t_units: List[Any]) -> None:
         function_line_ranges = []
         is_static = False
 
-        # Gather all the references to functions in this C file
         for node in t_unit.cursor.walk_preorder():
-            # To find the unused functions, we need to collect all 'mentions'
-            # of functions anywhere. This is generally speaking, hard...
-            # But... (see below)
             if node.kind == CursorKind.TRANSLATION_UNIT:
                 continue
-            if node.location.file.name != t_unit.spelling:
+            if node.location.file is None or node.location.file.name != t_unit.spelling:
                 continue
 
             for token in node.get_tokens():
@@ -75,10 +71,12 @@ def parse_ast(t_units: List[Any]) -> None:
                     if token.kind == TokenKind.PUNCTUATION:
                         if token.spelling == "{":
                             G_BRACE_LEVEL += 1
-                            function_line_ranges.append(token.location.line)
+                            if G_BRACE_LEVEL == 1:
+                                function_line_ranges.append(token.location.line)
                         elif token.spelling == "}":
                             G_BRACE_LEVEL -= 1
-                            function_line_ranges.append(token.location.line)
+                            if G_BRACE_LEVEL == 0:
+                                function_line_ranges.append(token.location.line)
                 elif node.kind == CursorKind.VAR_DECL:
                     if token.kind in [
                             TokenKind.KEYWORD, TokenKind.IDENTIFIER,
@@ -90,15 +88,16 @@ def parse_ast(t_units: List[Any]) -> None:
                         if token.spelling == 'static':
                             is_static = True
                             continue
-                        #     import pdb ; pdb.set_trace()
                         if token.location.column < last_column:
                             if interim:
+                                # import pdb ; pdb.set_trace()
                                 emit_interim(is_static)
                                 is_static = False
                         interim.append(token.spelling)
                         last_column = token.location.column
                 else:
                     if interim:
+                        # import pdb ; pdb.set_trace()
                         emit_interim(is_static)
                         is_static = False
         # res_queue.put(result)
@@ -142,9 +141,7 @@ def parse_ast(t_units: List[Any]) -> None:
 
 def parse_files(list_of_files: List[str]) -> Tuple[Any, List[Any]]:
     """
-    Use Clang to parse the provided list of files, and return
-    a tuple of the Clang index, and the list of compiled ASTs
-    one for each compilation unit)
+    Use Clang to parse the provided list of files.
     """
     idx = Index.create()
     t_units = []  # type: List[Any]
@@ -180,14 +177,7 @@ def parse_files(list_of_files: List[str]) -> Tuple[Any, List[Any]]:
 def main() -> None:
     """
     Parse all passed-in C files (preprocessed with -E, to be standalone).
-    Then scout for mentions of functions at any place, to collect the
-    *actually* used functions.
-
-    Finally, report the unused ones.
-
-    The first command line argument expected is the ELF (so we can gather
-    the entire list of functions in the object code). The remaining ones
-    are the preprocessed C source files.
+    Then scout for globals/statics.
     """
     if len(sys.argv) <= 1:
         print("Usage:", sys.argv[0], "preprocessed_source_files")
