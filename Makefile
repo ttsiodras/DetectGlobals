@@ -28,7 +28,7 @@ pylint: | check
 	echo "============================================"
 	echo " Running pylint..."
 	echo "============================================"
-	pylint ${TARGET}
+	pylint --disable=I --rcfile=pylint.cfg ${TARGET}
 
 mypy: | check
 	echo "============================================"

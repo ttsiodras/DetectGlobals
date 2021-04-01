@@ -7,7 +7,6 @@ not used anywhere.
 
 import os
 import sys
-import time
 import multiprocessing
 
 # For mypy static type checks.
@@ -34,10 +33,10 @@ def parse_ast(t_units: List[Any]) -> None:
 
     def process_unit(t_unit: Any):
         global G_BRACE_LEVEL
-        f = open("log.txt", "w")
+        f_log = open("log.txt", "w")
         result = []  # type: List[str]
         interim = []
-        last_column = 0;
+        last_column = 0
 
         def emit_interim(is_static):
             if not is_static:
@@ -45,9 +44,9 @@ def parse_ast(t_units: List[Any]) -> None:
                 inside_function = False
                 while not inside_function:
                     try:
-                        a = next(check_range_iter)
-                        b = next(check_range_iter)
-                        inside_function = a < token.location.line < b
+                        a_min = next(check_range_iter)
+                        b_max = next(check_range_iter)
+                        inside_function = a_min < token.location.line < b_max
                     except StopIteration:
                         break
             if is_static or not inside_function:
@@ -55,7 +54,6 @@ def parse_ast(t_units: List[Any]) -> None:
                 print(interim)
             while interim:
                 interim.pop()
-
 
         function_line_ranges = []
         is_static = False
@@ -71,7 +69,7 @@ def parse_ast(t_units: List[Any]) -> None:
                 continue
 
             for token in node.get_tokens():
-                f.write('%s %s %s\n' % (
+                f_log.write('%s %s %s\n' % (
                     node.kind, token.kind, token.spelling))
                 if node.kind == CursorKind.FUNCTION_DECL:
                     if token.kind == TokenKind.PUNCTUATION:
@@ -86,12 +84,12 @@ def parse_ast(t_units: List[Any]) -> None:
                             TokenKind.KEYWORD, TokenKind.IDENTIFIER,
                             TokenKind.PUNCTUATION]:
                         if token.spelling in ['const', 'volatile']:
-                            continue 
+                            continue
                         if token.spelling in ['extern', '=']:
                             break
                         if token.spelling == 'static':
                             is_static = True
-                            continue 
+                            continue
                         #     import pdb ; pdb.set_trace()
                         if token.location.column < last_column:
                             if interim:
