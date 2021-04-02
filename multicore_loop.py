@@ -28,8 +28,7 @@ class MultiCoreLoop:
 
     def spawn(self, target, args):
         if self.running_instances >= multiprocessing.cpu_count():
-            for result in self.res_queue.get():
-                self.consumer(result)
+            self.consumer(self.res_queue.get())
             all_are_still_alive = True
             while all_are_still_alive:
                 for idx_proc, proc in enumerate(
@@ -38,12 +37,14 @@ class MultiCoreLoop:
                     all_are_still_alive = \
                         all_are_still_alive and child_alive
                     if not child_alive:
+                        self.list_of_processes[idx_proc].join()
                         del self.list_of_processes[idx_proc]
                         break
                 else:
+                    print("Waiting...")
                     time.sleep(1)
             self.running_instances -= 1
-        proc = multiprocessing.Process(target, args)
+        proc = multiprocessing.Process(target=target, args=args)
         self.list_of_processes.append(proc)
         proc.start()
         self.running_instances += 1
@@ -54,5 +55,4 @@ class MultiCoreLoop:
             if proc.exitcode != 0:
                 print("[x] Failure in one of the child processes...")
                 sys.exit(1)
-            for result in self.res_queue.get():
-                self.consumer(result)
+            self.consumer(self.res_queue.get())
