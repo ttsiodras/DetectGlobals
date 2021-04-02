@@ -50,4 +50,7 @@ static bool g_brave_fpga = false;
 void c_preamble(FV * param_fv)
 {
     int l_hasparam = 0;
+    static int s_someStatic = 1;
+
+    puts("Foo");
 }

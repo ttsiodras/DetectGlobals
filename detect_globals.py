@@ -34,13 +34,12 @@ def process_unit(t_unit: Any, processor):
                 cur.location.file.name != t_unit.spelling:
             # print("Skipping over", node.spelling)
             continue
-        if hasattr(cur, "CursorKind") and cur.CursorKind == CursorKind.FUNCTION_DECL:
+        if cur.kind == CursorKind.FUNCTION_DECL:
             # Must somehow report static variables...
-            # Yet another puzzle - this doesn't do anything (why?!?!)
-            pass
-            # for cur_sub in cur.walk_preorder():
-            #     if cur.kind == CursorKind.VAR_DECL and cur.spelling != "":
-            #         print("Function defines:", cur.spelling)
+            print("Function:", cur.spelling)
+            for cur_sub in cur.walk_preorder():
+                if cur_sub.kind == CursorKind.VAR_DECL and cur_sub.spelling != "":
+                    print("Function defines:", cur_sub.spelling)
         elif cur.kind == CursorKind.VAR_DECL and cur.spelling != "":
             processor([cur.spelling, cur.type.spelling])
 
