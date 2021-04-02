@@ -15,12 +15,6 @@ from clang.cindex import (
     CursorKind, StorageClass, Index, TranslationUnit,
     TranslationUnitLoadError)
 
-from multicore_loop import MultiCoreLoop
-
-
-# Debug mode
-G_DEBUG = True
-
 
 def process_unit(t_unit: Any, processor):
     for cur in t_unit.cursor.get_children():
@@ -47,21 +41,12 @@ def parse_ast(t_units: List[Any]) -> List[Any]:
     Traverse the AST, gathering all globals/statics
     """
     results = []
-    if G_DEBUG:
-        def print_and_add(x):
-            print(x)
-            results.append(x)
-        for idx, t_unit in enumerate(t_units):
-            process_unit(t_unit, print_and_add)
-    else:
-        multicore_loop = MultiCoreLoop(results.append)
-        for idx, t_unit in enumerate(t_units):
-            print("[-] %3d%% Navigating AST and collecting symbols... " % (
-                100*(1+idx)/len(t_units)))
-            multicore_loop.spawn(
-                target=process_unit,
-                args=(t_unit, multicore_loop.res_queue.put))
-        multicore_loop.join()
+
+    def print_and_add(x):
+        print(x)
+        results.append(x)
+    for t_unit in t_units:
+        process_unit(t_unit, print_and_add)
     return results
 
 

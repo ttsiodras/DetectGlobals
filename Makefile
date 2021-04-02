@@ -1,4 +1,4 @@
-TARGET:=detect_globals.py multicore_loop.py
+TARGET:=detect_globals.py
 PYTHON:=python3
 VENV:=.venv
 
