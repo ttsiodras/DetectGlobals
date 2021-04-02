@@ -13,7 +13,8 @@ from collections import namedtuple
 from typing import List, Tuple, Any  # NOQA
 
 from clang.cindex import (
-    CursorKind, Index, TranslationUnit, TranslationUnitLoadError)
+    CursorKind, StorageClass, Index, TranslationUnit,
+    TranslationUnitLoadError)
 
 from multicore_loop import MultiCoreLoop
 
@@ -36,12 +37,15 @@ def process_unit(t_unit: Any, processor):
             continue
         if cur.kind == CursorKind.FUNCTION_DECL:
             # Must somehow report static variables...
-            print("Function:", cur.spelling)
             for cur_sub in cur.walk_preorder():
                 if cur_sub.kind == CursorKind.VAR_DECL and cur_sub.spelling != "":
-                    print("Function defines:", cur_sub.spelling)
+                    if cur_sub.storage_class == StorageClass.STATIC:
+                        processor([
+                            'static',
+                            cur_sub.spelling,
+                            cur_sub.type.spelling])
         elif cur.kind == CursorKind.VAR_DECL and cur.spelling != "":
-            processor([cur.spelling, cur.type.spelling])
+            processor(['global', cur.spelling, cur.type.spelling])
 
 
 def parse_ast(t_units: List[Any]) -> List[Any]:

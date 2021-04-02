@@ -5,40 +5,51 @@ def test1_nothing():
 
 def test2_simpletypes():
     assert get_globals_of(["tests/example2_simpletypes.c"]) == [
-        ['i', 'int'],
-        ['f', 'float'],
-        ['d', 'double']
+        ['global', 'i', 'int'],
+        ['global', 'f', 'float'],
+        ['global', 'd', 'double']
     ]
 
 def test3_typedef():
     assert get_globals_of(["tests/example3_typedef.c"]) == [
-        ['g_foo', 'Foo']
+        ['global', 'g_foo', 'Foo']
     ]
 
 def test4_taste1():
     res = get_globals_of(["tests/example4_taste1.c"])
     assert res == [
-        ['g1', 'FILE *'], ['g2', 'FILE *'], ['g3', 'FILE *'],
-        ['g_count', 'int'], ['g_brave_fpga', 'int']]
+        ['global', 'g1', 'FILE *'],
+        ['global', 'g2', 'FILE *'],
+        ['global', 'g3', 'FILE *'],
+        ['global', 'g_count', 'int'],
+        ['global', 'g_brave_fpga', 'int'],
+        ['static', 's_someStatic', 'int']]
 
 def test5_taste2():
     res = get_globals_of(["tests/example5_taste2.c"])
     assert res == [
-        ['ads', 'FILE *'], ['adb', 'FILE *'], ['async_ads', 'FILE *'],
-        ['async_adb', 'FILE *'], ['contains_sync_interface', 'int']]
+        ['global', 'ads', 'FILE *'],
+        ['global', 'adb', 'FILE *'],
+        ['global', 'async_ads', 'FILE *'],
+        ['global', 'async_adb', 'FILE *'],
+        ['global', 'contains_sync_interface', 'int']]
 
 def test6_taste3():
     res = get_globals_of(["tests/example6_taste3.c"])
     assert res == [
-        ['adb', 'FILE *'], ['ads', 'FILE *']]
+        ['global', 'adb', 'FILE *'],
+        ['global', 'ads', 'FILE *']]
 
 def test7_taste4():
     res = get_globals_of(["tests/example7_taste4.c"])
     assert res == [
-        ['thread', 'FILE *'], ['process', 'FILE *'],
-        ['nodes', 'FILE *'], ['period', 'long long'],
-        ['cyclic_name', 'char *'], ['op_kind', 'int'],
-        ['first_interface', 'int'],
-        ['system_root_node', 'char *'],
-        ['features_declared', 'int'],
-        ['system_connections_declared', 'unsigned int']]
+        ['global', 'thread', 'FILE *'],
+        ['global', 'process', 'FILE *'],
+        ['global', 'nodes', 'FILE *'],
+        ['global', 'period', 'long long'],
+        ['global', 'cyclic_name', 'char *'],
+        ['global', 'op_kind', 'int'],
+        ['global', 'first_interface', 'int'],
+        ['global', 'system_root_node', 'char *'],
+        ['global', 'features_declared', 'int'],
+        ['global', 'system_connections_declared', 'unsigned int']]
