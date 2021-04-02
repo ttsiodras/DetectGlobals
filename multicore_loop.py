@@ -1,17 +1,16 @@
 """
-A utility class to allow an easy - and very importantly,
-stable - way to use multiple cores for the execution of
-a loop. Each core will execute one iteration.
+A utility class to allow an easy - and very importantly, stable - way
+to use multiple cores for the execution of a loop.
 
-There are very nice (syntactically speaking) libraries,
-like concurrent.futures, that do this work - but sadly,
-every time I used them I find out that there's the
-occasional weird "gets stuck" issue; some mysterious
-race-condition? Whatever it is, my solution here
-(first implemented for the TASTE's orchestrator)
-doesn't suffer from it - and works solidly across
-multiple native Linux distros, chroots, Docker containers,
-etc.
+Each core will execute one loop iteration.
+
+There are very nice (syntactically speaking) libraries, like
+concurrent.futures, that do this work - but sadly, every time I used them
+I found out that there's the occasional weird "gets stuck" issue; some
+mysterious race-condition triggered only on occasion? I don't know.
+Whatever it is, my simple solution here (first implemented for the
+TASTE's orchestrator) doesn't suffer from it; and works solidly across
+multiple native Linux distros, chroots, Docker containers, etc.
 """
 import sys
 import time
