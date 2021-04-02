@@ -31,6 +31,9 @@ mypy: dev-install
 test: dev-install
 	${VENV}/bin/pytest -v test_detector.py
 
+test-dbg: dev-install
+	${VENV}/bin/pytest -v --pdb test_detector.py
+
 dev-install:	.setup | prereq
 
 prereq:

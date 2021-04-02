@@ -13,7 +13,7 @@ from collections import namedtuple
 from typing import List, Tuple, Any  # NOQA
 
 from clang.cindex import (
-    CursorKind, TokenKind, Index, TranslationUnit, TranslationUnitLoadError)
+    CursorKind, Index, TranslationUnit, TranslationUnitLoadError)
 
 from multicore_loop import MultiCoreLoop
 
@@ -28,36 +28,6 @@ G_DEBUG = True
 
 
 def process_unit(t_unit: Any, processor):
-    # To detect globals, track if we are inside or outside function bodies
-    brace_level = 0
-
-    f_log = open("log.txt", "w")
-    interim: List[str] = []
-    last_column = 0
-    function_line_ranges: List[LineRange] = []
-    is_static = False
-
-    def emit_interim(is_static, token):
-        if not is_static:
-            inside_function = True
-            for rnge in function_line_ranges:
-                if rnge.a_min <= token.location.line <= rnge.b_max:
-                    break
-            else:
-                inside_function = False
-        if is_static or not inside_function:
-            processor(interim[:])
-        while interim:
-            interim.pop()
-
-    def add_function_border(lineno, data_pair=[]):  # pylint: disable=W0102
-        if not data_pair:
-            data_pair.append(lineno)
-            return
-        function_line_ranges.append(
-            LineRange(data_pair[0], lineno))
-        data_pair.pop()
-
     for cur in t_unit.cursor.get_children():
         if cur.kind == CursorKind.TRANSLATION_UNIT or     \
                 cur.location.file is None or              \
@@ -65,11 +35,14 @@ def process_unit(t_unit: Any, processor):
             # print("Skipping over", node.spelling)
             continue
         if hasattr(cur, "CursorKind") and cur.CursorKind == CursorKind.FUNCTION_DECL:
-            for cur_sub in cur.get_children():
-                if cur.kind == CursorKind.VAR_DECL and cur.spelling != "":
-                    print("Function defines:", cur.spelling)
+            # Must somehow report static variables...
+            # Yet another puzzle - this doesn't do anything (why?!?!)
+            pass
+            # for cur_sub in cur.walk_preorder():
+            #     if cur.kind == CursorKind.VAR_DECL and cur.spelling != "":
+            #         print("Function defines:", cur.spelling)
         elif cur.kind == CursorKind.VAR_DECL and cur.spelling != "":
-            print("Global defined:", cur.spelling, cur.type.spelling)
+            processor([cur.spelling, cur.type.spelling])
 
 
 def parse_ast(t_units: List[Any]) -> List[Any]:
