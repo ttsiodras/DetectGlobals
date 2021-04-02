@@ -1,32 +1,17 @@
 Maxime's work on creating a model checker depends on knowledge of variables in
-global storage. This little utility attempts to use libclang and a bunch of
-heuristics to provide that information. 
+global storage. This little utility uses libclang to provide that information. 
 
-# Setup - usage
+To run the static analysis tests on this utility's Python source:
 
-Begin by setting up the virtual environment and activating it:
+    $ make
 
-    $ make dev-install
-    $ . .venv/bin/activate
+To run the actual C source code processing tests:
 
-You can now modify your project's Makefiles/build system files to spawn your
-cross-compiler with `-E` instead of `-c`. This will give you a set of `*.o`
-files that aren't really object files - they are instead preprocessed,
-standalone source code.
+    $ make test
 
-Collect them, and rename them appropriately:
+You can "feed" C source code to this script, with an invocation like this:
 
-    $ mkdir /path/to/preprocessed
-    $ find /path/to/src -type f -iname '*.o' \
-        -exec mv -i '{}' /path/to/preprocessed/ \;
-    $ cd /path/to/preprocessed
-    $ rename -E 's,o$,c,' *.o
-    $ cd -
+    $ ./detect_globals.py /path/to/*.c
 
-You can now "feed" these standalone preprocessed sources to this
-script, with an invocation like this:
-
-    $ ./detect_globals.py /path/to/preprocessed/*.c
-
-The script will then report the globals it finds (including
-function-level statics).
+The script will then report the globals it finds (including function-level `static`s).
+For usage information in library form, see the test code (in `test_detector.py`).
