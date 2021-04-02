@@ -7,7 +7,6 @@ not used anywhere.
 
 import os
 import sys
-import multiprocessing
 
 # For mypy static type checks.
 from typing import List, Tuple, Any  # NOQA
@@ -15,128 +14,107 @@ from typing import List, Tuple, Any  # NOQA
 from clang.cindex import (
     CursorKind, TokenKind, Index, TranslationUnit, TranslationUnitLoadError)
 
+from multicore_loop import MultiCoreLoop
+
 
 # For SPARC targets, this is the toolchain prefix
 G_PLATFORM_PREFIX = "sparc-rtems-"
 
-# To detect globals, track if we are inside or outside function bodies
-G_BRACE_LEVEL = 0
-
-# Debug level
-G_DEBUG = 1
+# Debug mode
+G_DEBUG = True
 
 
-def parse_ast(t_units: List[Any]) -> None:
+def process_unit(t_unit: Any, processor):
+    # To detect globals, track if we are inside or outside function bodies
+    brace_level = 0
+
+    f_log = open("log.txt", "w")
+    interim: List[str] = []
+    last_column = 0
+    function_line_ranges: List[int] = []
+    is_static = False
+
+    def emit_interim(is_static, token):
+        if not is_static:
+            check_range_iter = iter(function_line_ranges)
+            inside_function = False
+            while not inside_function:
+                try:
+                    a_min = next(check_range_iter)
+                    b_max = next(check_range_iter)
+                    inside_function = a_min < token.location.line < b_max
+                except StopIteration:
+                    break
+        if is_static or not inside_function:
+            processor(interim[:])
+        while interim:
+            interim.pop()
+
+    for node in t_unit.cursor.walk_preorder():
+        if node.kind == CursorKind.TRANSLATION_UNIT or     \
+                node.location.file is None or              \
+                node.location.file.name != t_unit.spelling:
+            continue
+
+        for token in node.get_tokens():
+            f_log.write('%s %s %s\n' % (
+                node.kind, token.kind, token.spelling))
+            if node.kind == CursorKind.FUNCTION_DECL and \
+                    token.kind == TokenKind.PUNCTUATION:
+                if token.spelling == "{":
+                    brace_level += 1
+                    if brace_level == 1:
+                        function_line_ranges.append(token.location.line)
+                elif token.spelling == "}":
+                    brace_level -= 1
+                    if brace_level == 0:
+                        function_line_ranges.append(token.location.line)
+            elif node.kind == CursorKind.VAR_DECL:
+                if token.kind in [
+                        TokenKind.KEYWORD, TokenKind.IDENTIFIER,
+                        TokenKind.PUNCTUATION]:
+                    if token.spelling in ['const', 'volatile']:
+                        continue
+                    if token.spelling in ['extern', '=']:
+                        break
+                    if token.spelling == 'static':
+                        is_static = True
+                        continue
+                    # if token.spelling == 'in':
+                    #     import pdb ; pdb.set_trace()
+                    if token.location.column < last_column and \
+                            interim:
+                        emit_interim(is_static, token)
+                        is_static = False
+                    interim.append(token.spelling)
+                    last_column = token.location.column
+            else:
+                if interim:
+                    emit_interim(is_static, token)
+                    is_static = False
+
+
+def parse_ast(t_units: List[Any]) -> List[Any]:
     """
     Traverse the AST, gathering all globals/statics
     """
-
-    def process_unit(t_unit: Any):
-        global G_BRACE_LEVEL
-        f_log = open("log.txt", "w")
-        result = []  # type: List[str]
-        interim = []
-        last_column = 0
-
-        def emit_interim(is_static):
-            if not is_static:
-                check_range_iter = iter(function_line_ranges)
-                inside_function = False
-                while not inside_function:
-                    try:
-                        a_min = next(check_range_iter)
-                        b_max = next(check_range_iter)
-                        inside_function = a_min < token.location.line < b_max
-                    except StopIteration:
-                        break
-            if is_static or not inside_function:
-                result.append(interim[:])
-                print(interim)
-            while interim:
-                interim.pop()
-
-        function_line_ranges = []
-        is_static = False
-
-        for node in t_unit.cursor.walk_preorder():
-            if node.kind == CursorKind.TRANSLATION_UNIT:
-                continue
-            if node.location.file is None or node.location.file.name != t_unit.spelling:
-                continue
-
-            for token in node.get_tokens():
-                f_log.write('%s %s %s\n' % (
-                    node.kind, token.kind, token.spelling))
-                if node.kind == CursorKind.FUNCTION_DECL:
-                    if token.kind == TokenKind.PUNCTUATION:
-                        if token.spelling == "{":
-                            G_BRACE_LEVEL += 1
-                            if G_BRACE_LEVEL == 1:
-                                function_line_ranges.append(token.location.line)
-                        elif token.spelling == "}":
-                            G_BRACE_LEVEL -= 1
-                            if G_BRACE_LEVEL == 0:
-                                function_line_ranges.append(token.location.line)
-                elif node.kind == CursorKind.VAR_DECL:
-                    if token.kind in [
-                            TokenKind.KEYWORD, TokenKind.IDENTIFIER,
-                            TokenKind.PUNCTUATION]:
-                        if token.spelling in ['const', 'volatile']:
-                            continue
-                        if token.spelling in ['extern', '=']:
-                            break
-                        if token.spelling == 'static':
-                            is_static = True
-                            continue
-                        if token.spelling == 'in':
-                            import pdb ; pdb.set_trace()
-                        if token.location.column < last_column:
-                            if interim:
-                                emit_interim(is_static)
-                                is_static = False
-                        interim.append(token.spelling)
-                        last_column = token.location.column
-                else:
-                    if interim:
-                        emit_interim(is_static)
-                        is_static = False
-        # res_queue.put(result)
-
-    res_queue = multiprocessing.Queue()  # type: Any
-    list_of_processes = []  # type: List[Any]
-    running_instances = 0
-
-    for idx, t_unit in enumerate(t_units):
-        process_unit(t_unit)
-    #    print("[-] %3d%% Navigating AST and collecting symbols... " % (
-    #        100*(1+idx)/len(t_units)))
-    #    # if running_instances >= multiprocessing.cpu_count():
-    #    if running_instances >= 1:
-    #        for definition in res_queue.get():
-    #            print(definition)
-    #        all_are_still_alive = True
-    #        while all_are_still_alive:
-    #            for idx_proc, proc in enumerate(list_of_processes):
-    #                child_alive = proc.is_alive()
-    #                all_are_still_alive = all_are_still_alive and child_alive
-    #                if not child_alive:
-    #                    del list_of_processes[idx_proc]
-    #                    break
-    #            else:
-    #                time.sleep(1)
-    #        running_instances -= 1
-    #    proc = multiprocessing.Process(
-    #        target=process_unit, args=(t_unit,))
-    #    list_of_processes.append(proc)
-    #    proc.start()
-    #    running_instances += 1
-    #for proc in list_of_processes:
-    #    proc.join()
-    #    if proc.exitcode != 0:
-    #        print("[x] Failure in one of the child processes...")
-    #        sys.exit(1)
-    #    for definition in res_queue.get():
-    #        print(definition)
+    results = []
+    if G_DEBUG:
+        def print_and_add(x):
+            print(x)
+            results.append(x)
+        for idx, t_unit in enumerate(t_units):
+            process_unit(t_unit, print_and_add)
+    else:
+        multicore_loop = MultiCoreLoop(results.append)
+        for idx, t_unit in enumerate(t_units):
+            print("[-] %3d%% Navigating AST and collecting symbols... " % (
+                100*(1+idx)/len(t_units)))
+            multicore_loop.spawn(
+                target=process_unit,
+                args=(t_unit, multicore_loop.res_queue.put))
+        multicore_loop.join()
+    return results
 
 
 def parse_files(list_of_files: List[str]) -> Tuple[Any, List[Any]]:
@@ -174,6 +152,11 @@ def parse_files(list_of_files: List[str]) -> Tuple[Any, List[Any]]:
     return idx, t_units
 
 
+def get_globals_of(files: List[str]):
+    _, t_units = parse_files(files)
+    return parse_ast(t_units)
+
+
 def main() -> None:
     """
     Parse all passed-in C files (preprocessed with -E, to be standalone).
@@ -184,14 +167,11 @@ def main() -> None:
         sys.exit(1)
 
     _, t_units = parse_files(sys.argv[1:])
-
     # To debug what happens with a specific compilation unit, use this:
     #
     # le_units = [x for x in t_units if x.spelling.endswith('svc191vnir.c')]
     # import ipdb ; ipdb.set_trace()
-
     parse_ast(t_units)
-
     print("[-] Done.")
 
 

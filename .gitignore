@@ -7,3 +7,7 @@ usedFunctions
 libclang-7.so
 deadFunctions
 .venv
+**/__pycache__
+.analysed
+.setup
+log.txt
