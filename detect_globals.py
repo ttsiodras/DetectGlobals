@@ -58,59 +58,18 @@ def process_unit(t_unit: Any, processor):
             LineRange(data_pair[0], lineno))
         data_pair.pop()
 
-    for node in t_unit.cursor.walk_preorder():
-        if node.kind == CursorKind.TRANSLATION_UNIT or     \
-                node.location.file is None or              \
-                node.location.file.name != t_unit.spelling:
+    for cur in t_unit.cursor.get_children():
+        if cur.kind == CursorKind.TRANSLATION_UNIT or     \
+                cur.location.file is None or              \
+                cur.location.file.name != t_unit.spelling:
             # print("Skipping over", node.spelling)
             continue
-
-        for token in node.get_tokens():
-            f_log.write('%s (%s:%d:%d) %s (%s:%d:%d)\n' % (
-                node.kind,
-                node.spelling,
-                node.location.line,
-                node.location.column,
-                token.kind,
-                token.spelling,
-                token.location.line,
-                token.location.column))
-            if node.kind == CursorKind.FUNCTION_DECL and \
-                    token.kind == TokenKind.PUNCTUATION:
-                # To separate VAR_DECLs that happen inside functions
-                # from those happening outside, count the braces;
-                # when we are at the outermost level, we are at
-                # global scope.
-                if token.spelling == "{":
-                    brace_level += 1
-                    if brace_level == 1:
-                        # So basically store
-                        add_function_border(token.location.line)
-                elif token.spelling == "}":
-                    brace_level -= 1
-                    if brace_level == 0:
-                        add_function_border(token.location.line)
-            elif node.kind == CursorKind.VAR_DECL:
-                if token.kind in [
-                        TokenKind.KEYWORD, TokenKind.IDENTIFIER,
-                        TokenKind.PUNCTUATION]:
-                    if token.spelling in ['const', 'volatile']:
-                        continue
-                    if token.spelling in ['extern', '=']:
-                        break
-                    if token.spelling == 'static':
-                        is_static = True
-                        continue
-                    if token.location.column < last_column and \
-                            interim:
-                        emit_interim(is_static, token)
-                        is_static = False
-                    interim.append(token.spelling)
-                    last_column = token.location.column
-            else:
-                if interim:
-                    emit_interim(is_static, token)
-                    is_static = False
+        if hasattr(cur, "CursorKind") and cur.CursorKind == CursorKind.FUNCTION_DECL:
+            for cur_sub in cur.get_children():
+                if cur.kind == CursorKind.VAR_DECL and cur.spelling != "":
+                    print("Function defines:", cur.spelling)
+        elif cur.kind == CursorKind.VAR_DECL and cur.spelling != "":
+            print("Global defined:", cur.spelling, cur.type.spelling)
 
 
 def parse_ast(t_units: List[Any]) -> List[Any]:
