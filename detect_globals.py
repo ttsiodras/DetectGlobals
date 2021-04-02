@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-A utility that parses pre-processed (standalone) C files using Clang,
-and then detects and reports all functions inside an ELF that are
-not used anywhere.
+A utility that parses C source using Clang, and then
+detects and reports all variables with global
+storage - i.e. all globals and function-statics.
 """
 
 import os
 import sys
-from collections import namedtuple
 
 # For mypy static type checks.
 from typing import List, Tuple, Any  # NOQA
@@ -18,11 +17,6 @@ from clang.cindex import (
 
 from multicore_loop import MultiCoreLoop
 
-LineRange = namedtuple('LineRange', ['a_min', 'b_max'])
-
-
-# For SPARC targets, this is the toolchain prefix
-G_PLATFORM_PREFIX = "sparc-rtems-"
 
 # Debug mode
 G_DEBUG = True
