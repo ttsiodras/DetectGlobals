@@ -7,6 +7,7 @@ storage - i.e. all globals and function-statics.
 
 import os
 import sys
+import logging
 
 # For mypy static type checks.
 from typing import List, Tuple, Any  # NOQA
@@ -31,9 +32,13 @@ def process_unit(t_unit: Any, processor):
                         processor([
                             'static',
                             cur_sub.spelling,
-                            cur_sub.type.spelling])
+                            cur_sub.type.spelling,
+                            t_unit.spelling,
+                            cur_sub.location.line])
         elif cur.kind == CursorKind.VAR_DECL and cur.spelling != "":
-            processor(['global', cur.spelling, cur.type.spelling])
+            processor([
+                'global', cur.spelling, cur.type.spelling,
+                t_unit.spelling, cur.location.line])
 
 
 def parse_ast(t_units: List[Any]) -> List[Any]:
@@ -43,7 +48,6 @@ def parse_ast(t_units: List[Any]) -> List[Any]:
     results = []
 
     def print_and_add(x):
-        print(x)
         results.append(x)
     for t_unit in t_units:
         process_unit(t_unit, print_and_add)
@@ -70,16 +74,16 @@ def parse_files(list_of_files: List[str]) -> Tuple[Any, List[Any]]:
                 t_units.append(
                     TranslationUnit.from_ast_file(
                         cache_filename, idx))
-                print("[-] Loading cached AST for", filename)
+                logging.info("[-] Loading cached AST for %s", filename)
             except TranslationUnitLoadError:
-                print("[-] %3d%% Parsing " % (
-                    100*(i+1)/len(list_of_files)) + filename)
+                logging.info("[-] %3d%% Parsing %s", (
+                    100*(i+1)/len(list_of_files)), filename)
                 t_units.append(idx.parse(filename))
                 t_units[-1].save(cache_filename)
         else:
             # No, parse it now.
-            print("[-] %3d%% Parsing " % (
-                100*(i+1)/len(list_of_files)) + filename)
+            logging.info("[-] %3d%% Parsing %s", (
+                100*(i+1)/len(list_of_files)), filename)
             # ...to adapt to: .... filename, args=['-I ...', '-D ...']
             t_units.append(idx.parse(filename))
             t_units[-1].save(cache_filename)
@@ -96,17 +100,30 @@ def main() -> None:
     Parse all passed-in C files (preprocessed with -E, to be standalone).
     Then scout for globals/statics.
     """
+
     if len(sys.argv) <= 1:
-        print("Usage:", sys.argv[0], "preprocessed_source_files")
+        print("Usage:", sys.argv[0], "[-h] [-v] <source_file1> ...")
         sys.exit(1)
 
+    if "-h" in sys.argv:
+        print("Usage:", sys.argv[0], "[-h] [-v] <source_file1> ...")
+        print("Options are:")
+        print("    -h for help")
+        print("    -v for increased verbosity")
+        sys.exit(1)
+    if "-v" in sys.argv:
+        del sys.argv[sys.argv.index("-v")]
+        logger = logging.getLogger()
+        logger.setLevel(logging.INFO)
+    logging.info("[-] Parsing input files...")
     _, t_units = parse_files(sys.argv[1:])
     # To debug what happens with a specific compilation unit, use this:
     #
     # le_units = [x for x in t_units if x.spelling.endswith('svc191vnir.c')]
     # import ipdb ; ipdb.set_trace()
-    parse_ast(t_units)
-    print("[-] Done.")
+    for result in parse_ast(t_units):
+        print("[-] Detected variable:", str(result))
+    logging.info("[-] Done.")
 
 
 if __name__ == "__main__":
