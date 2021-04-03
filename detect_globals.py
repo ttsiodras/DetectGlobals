@@ -75,11 +75,11 @@ def parse_files(list_of_files: List[str]) -> Tuple[Any, List[Any]]:
                     TranslationUnit.from_ast_file(
                         cache_filename, idx))
                 logging.info("[-] Loading cached AST for %s", filename)
-            except TranslationUnitLoadError:
+            except TranslationUnitLoadError:  # pragma: nocover
                 logging.info("[-] %3d%% Parsing %s", (
-                    100*(i+1)/len(list_of_files)), filename)
-                t_units.append(idx.parse(filename))
-                t_units[-1].save(cache_filename)
+                    100*(i+1)/len(list_of_files)), filename)  # pragma: nocover
+                t_units.append(idx.parse(filename))  # pragma: nocover
+                t_units[-1].save(cache_filename)  # pragma: nocover
         else:
             # No, parse it now.
             logging.info("[-] %3d%% Parsing %s", (

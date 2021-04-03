@@ -54,8 +54,18 @@ prereq:
 	${PYTHON} -m pip install -r requirements.txt || exit 1
 	touch $@
 
+coverage: | dev-install
+	$(MAKE) clean
+	${VENV}/bin/coverage run -a ./detect_globals.py || exit 0
+	${VENV}/bin/coverage run -a ./detect_globals.py -h || exit 0
+	${VENV}/bin/coverage run -a ./detect_globals.py -v tests/example*c
+	${VENV}/bin/coverage run -a -m pytest
+	@echo -n "Coverage achieved: " ; \
+	${VENV}/bin/coverage report | grep ^detect | awk '{print $$NF}'
+
+
 clean:
 	rm -rf .cache/ .mypy_cache/ .analysed .setup __pycache__ \
-	       tests/__pycache__ .pytest_cache/ .processed
+	       tests/__pycache__ .pytest_cache/ .processed .coverage
 
 .PHONY:	flake8 pylint mypy clean dev-install prereq

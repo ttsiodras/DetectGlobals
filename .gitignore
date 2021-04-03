@@ -11,3 +11,4 @@ deadFunctions
 .analysed
 .setup
 log.txt
+.coverage
