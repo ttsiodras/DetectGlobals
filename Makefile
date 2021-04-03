@@ -1,4 +1,4 @@
-TARGET:=detect_globals.py
+TARGET:=detect_globals.py test_detector.py
 PYTHON:=python3
 VENV:=.venv
 
