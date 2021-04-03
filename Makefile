@@ -55,6 +55,7 @@ prereq:
 	touch $@
 
 clean:
-	rm -rf .cache/ .mypy_cache/ .analysed .setup
+	rm -rf .cache/ .mypy_cache/ .analysed .setup __pycache__ \
+	       tests/__pycache__ .pytest_cache/ .processed
 
 .PHONY:	flake8 pylint mypy clean dev-install prereq
