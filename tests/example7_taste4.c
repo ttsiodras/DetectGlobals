@@ -972,6 +972,7 @@ void GenerateProcessor(Process *p, Process_list *processes)
 /* External interface: Create the PROCESS IMPLEMENTATION part */
 void Generate_Full_ConcurrencyView(Process_list *processes, char *root_node)
 {
+   static const int ls_must_be_ignored[] = {1,2,3}; 
    system_root_node = root_node;
 
    Create_Nodes_file(processes);
