@@ -11,6 +11,7 @@ all:	.setup .analysed test
 	@touch $@
 
 flake8: dev-install
+	exit 1
 	@echo "============================================"
 	@echo " Running flake8..."
 	@echo "============================================"

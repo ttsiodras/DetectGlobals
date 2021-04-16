@@ -1,3 +1,5 @@
+[![Build and Test Status of DetectGlobals on Circle CI](https://circleci.com/gh/ttsiodras/DetectGlobals.svg?&style=shield)](https://circleci.com/gh/ttsiodras/DetectGlobals/tree/master)
+
 Maxime's work on creating a model checker depends on knowledge of variables in
 global storage. This little utility uses libclang to provide that information. 
 
