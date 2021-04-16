@@ -6,15 +6,13 @@ global storage. This little utility uses libclang to provide that information.
 If you run...
 
     $ make
-
-...you will then execute the static analysis tests on this utility's Python source
-as well as run actual C source code processing tests:
-
-    $ make test
     ...
     ===== 7 passed in 0.14s ====
 
-To verify the coverage achieved:
+...you will then execute the static analysis tests on this utility's Python source;
+and you will also run actual C source code processing tests.
+
+To verify the coverage achieved, issue this:
 
     $ make coverage
     ...
