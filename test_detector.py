@@ -1,5 +1,6 @@
 from detect_globals import get_globals_of
 
+
 def common(source, results):
     for res1, res2 in zip(results, get_globals_of([source])):
         # Verify, for each result:
@@ -11,8 +12,10 @@ def common(source, results):
         # - ...and the reported filename
         assert res2[3].endswith(source)
 
+
 def test1_nothing():
     assert get_globals_of(["tests/example1_empty.c"]) == []
+
 
 def test2_simpletypes():
     source = "tests/example2_simpletypes.c"
@@ -23,12 +26,14 @@ def test2_simpletypes():
     ]
     common(source, results)
 
+
 def test3_typedef():
     source = "tests/example3_typedef.c"
     results = [
         ['global', 'g_foo', 'Foo']
     ]
     common(source, results)
+
 
 def test4_taste1():
     source = "tests/example4_taste1.c"
@@ -41,6 +46,7 @@ def test4_taste1():
         ['static', 's_someStatic', 'int']]
     common(source, results)
 
+
 def test5_taste2():
     source = "tests/example5_taste2.c"
     results = [
@@ -51,12 +57,14 @@ def test5_taste2():
         ['global', 'contains_sync_interface', 'int']]
     common(source, results)
 
+
 def test6_taste3():
     source = "tests/example6_taste3.c"
     results = [
         ['global', 'adb', 'FILE *'],
         ['global', 'ads', 'FILE *']]
     common(source, results)
+
 
 def test7_taste4():
     source = "tests/example7_taste4.c"

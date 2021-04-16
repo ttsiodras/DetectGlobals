@@ -27,7 +27,8 @@ def process_unit(t_unit: Any, processor):
         if cur.kind == CursorKind.FUNCTION_DECL:
             # Must somehow report static variables...
             for cur_sub in cur.walk_preorder():
-                if cur_sub.kind == CursorKind.VAR_DECL and cur_sub.spelling != "":
+                if cur_sub.kind == CursorKind.VAR_DECL and \
+                        cur_sub.spelling != "":
                     if cur_sub.storage_class == StorageClass.STATIC and \
                             not cur_sub.type.spelling.startswith('const'):
                         processor([
