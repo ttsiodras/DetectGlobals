@@ -3,11 +3,12 @@
 Maxime's work on creating a model checker depends on knowledge of variables in
 global storage. This little utility uses libclang to provide that information. 
 
-To run the static analysis tests on this utility's Python source:
+If you run...
 
     $ make
 
-To run the actual C source code processing tests:
+...you will then execute the static analysis tests on this utility's Python source
+as well as run actual C source code processing tests:
 
     $ make test
     ...
@@ -18,7 +19,6 @@ To verify the coverage achieved:
     $ make coverage
     ...
     Coverage achieved: 100%
-
 
 You can "feed" C source code to this script, with an invocation like this:
 
