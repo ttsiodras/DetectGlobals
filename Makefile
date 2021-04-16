@@ -2,7 +2,7 @@ TARGET:=detect_globals.py test_detector.py
 PYTHON:=python3
 VENV:=.venv
 
-all:	.setup .analysed
+all:	.setup .analysed test
 
 .analysed:	${TARGET}
 	$(MAKE) flake8
